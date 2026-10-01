@@ -383,43 +383,61 @@
         };
 
 
-        // REDEEM
-
+        // REDEEM //
         window.redeemUC = async function() {
 
-            const user = auth.currentUser;
+    const user = auth.currentUser;
 
-            if (!user) return;
+    if (!user) {
+        return;
+    }
 
+    const userRef = doc(db, "users", user.uid);
 
-            const userRef =
-                doc(db, "users", user.uid);
+    const userDoc = await getDoc(userRef);
 
-            const userDoc =
-                await getDoc(userRef);
+    if (!userDoc.exists()) {
+        document.getElementById("appMessage").innerText =
+            "❌ User account not found.";
+        return;
+    }
 
-            const data =
-                userDoc.data();
+    const data = userDoc.data();
 
+    const currentPoints = data.points || 0;
 
-            if ((data.points || 0) < 100) {
+    if (currentPoints < 100) {
+        document.getElementById("appMessage").innerText =
+            "❌ You need 100 points to redeem 60 UC.";
+        return;
+    }
 
-                document
-                    .getElementById("appMessage")
-                    .innerText =
-                    "❌ You need 100 points.";
+    const newPoints = currentPoints - 100;
 
-                return;
+    await updateDoc(userRef, {
+        points: newPoints
+    });
 
-            }
+    const redemptionId =
+        crypto.randomUUID();
 
+    await setDoc(
+        doc(db, "redemptions", redemptionId),
+        {
+            userId: user.uid,
+            reward: "60 UC",
+            cost: 100,
+            status: "pending",
+            createdAt: new Date().toISOString()
+        }
+    );
 
-            document
-                .getElementById("appMessage")
-                .innerText =
-                "🛠️ Redemption system will be connected later.";
+    document.getElementById("points").innerText =
+        newPoints;
 
-        };
+    document.getElementById("appMessage").innerText =
+        "✅ Redemption request submitted!";
+};
 
     </script>
 
