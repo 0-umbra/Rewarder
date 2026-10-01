@@ -1,46 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Reward App</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f4f7;
+            text-align: center;
+        }
+
+        .header {
+            background: #111827;
+            color: white;
+            padding: 25px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            margin: 25px 15px;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .points {
+            font-size: 40px;
+            font-weight: bold;
+            margin: 15px;
+        }
+
+        button {
+            width: 90%;
+            max-width: 350px;
+            padding: 15px;
+            margin: 8px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .login {
+            background: #2563eb;
+            color: white;
+        }
+
+        .redeem {
+            background: #16a34a;
+            color: white;
+        }
+
+        .message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>🎁 Reward App</h1>
+    <div class="header">
+        <h1>🎁 Reward App</h1>
+        <p>Earn points and redeem rewards</p>
+    </div>
 
-    <h2>Welcome!</h2>
+    <div class="card">
 
-    <p>Your Points:</p>
+        <h2>Your Points</h2>
 
-    <h1 id="points">0</h1>
+        <div class="points" id="points">0</div>
 
-    <button onclick="claimPoints()">
-        Daily Login +100 Points
-    </button>
+        <button class="login" onclick="claimDaily()">
+            📅 Daily Login +100 Points
+        </button>
 
-    <br><br>
+        <button class="redeem" onclick="redeemUC()">
+            🎮 Redeem 60 UC
+        </button>
 
-    <button onclick="redeem()">
-        Redeem 60 UC
-    </button>
+        <div class="message" id="message"></div>
+
+    </div>
+
+    <div class="card">
+
+        <h2>🎁 Available Reward</h2>
+
+        <p>60 UC</p>
+        <p><strong>Cost: 100 Points</strong></p>
+
+    </div>
 
     <script>
+
         let points = 0;
+        let claimedToday = false;
 
-        function claimPoints() {
-            points += 100;
-            document.getElementById("points").innerText = points;
-        }
+        function claimDaily() {
 
-        function redeem() {
-            if (points >= 100) {
-                points -= 100;
-                document.getElementById("points").innerText = points;
-                alert("Redemption request created!");
-            } else {
-                alert("You need 100 points.");
+            if (claimedToday) {
+                document.getElementById("message").innerText =
+                    "You already claimed today's points.";
+                return;
             }
+
+            points += 100;
+            claimedToday = true;
+
+            document.getElementById("points").innerText = points;
+
+            document.getElementById("message").innerText =
+                "🎉 You received 100 points!";
         }
+
+        function redeemUC() {
+
+            if (points < 100) {
+
+                document.getElementById("message").innerText =
+                    "❌ You need 100 points to redeem 60 UC.";
+
+                return;
+            }
+
+            points -= 100;
+
+            document.getElementById("points").innerText = points;
+
+            document.getElementById("message").innerText =
+                "✅ Redemption request created!";
+        }
+
     </script>
 
 </body>
