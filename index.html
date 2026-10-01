@@ -20,10 +20,6 @@
             padding: 25px;
         }
 
-        .header h1 {
-            margin: 0;
-        }
-
         .card {
             background: white;
             margin: 25px 15px;
@@ -32,36 +28,50 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
 
+        input {
+            width: 90%;
+            max-width: 350px;
+            padding: 13px;
+            margin: 7px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 90%;
+            max-width: 350px;
+            padding: 14px;
+            margin: 7px;
+            border: none;
+            border-radius: 9px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .logout {
+            background: #dc2626;
+            color: white;
+        }
+
         .points {
             font-size: 40px;
             font-weight: bold;
             margin: 15px;
         }
 
-        button {
-            width: 90%;
-            max-width: 350px;
-            padding: 15px;
-            margin: 8px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .login {
-            background: #2563eb;
-            color: white;
-        }
-
-        .redeem {
-            background: #16a34a;
-            color: white;
+        .hidden {
+            display: none;
         }
 
         .message {
-            margin-top: 15px;
+            margin: 12px;
             font-weight: bold;
         }
     </style>
@@ -74,72 +84,342 @@
         <p>Earn points and redeem rewards</p>
     </div>
 
-    <div class="card">
+    <!-- LOGIN -->
+    <div class="card" id="loginScreen">
+
+        <h2>Login / Sign Up</h2>
+
+        <input
+            type="email"
+            id="email"
+            placeholder="Email"
+        >
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Password"
+        >
+
+        <button class="primary" onclick="signUp()">
+            Create Account
+        </button>
+
+        <button class="primary" onclick="login()">
+            Login
+        </button>
+
+        <div class="message" id="loginMessage"></div>
+
+    </div>
+
+
+    <!-- APP -->
+    <div class="card hidden" id="appScreen">
 
         <h2>Your Points</h2>
 
-        <div class="points" id="points">0</div>
+        <div class="points" id="points">
+            0
+        </div>
 
-        <button class="login" onclick="claimDaily()">
+        <button class="primary" onclick="claimDaily()">
             📅 Daily Login +100 Points
         </button>
 
-        <button class="redeem" onclick="redeemUC()">
+        <button onclick="redeemUC()">
             🎮 Redeem 60 UC
         </button>
 
-        <div class="message" id="message"></div>
+        <p id="appMessage"></p>
+
+        <button class="logout" onclick="logout()">
+            Logout
+        </button>
 
     </div>
 
-    <div class="card">
 
-        <h2>🎁 Available Reward</h2>
+    <!-- Firebase -->
 
-        <p>60 UC</p>
-        <p><strong>Cost: 100 Points</strong></p>
+    <script type="module">
 
-    </div>
+        import { initializeApp }
+        from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
 
-    <script>
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged
+        }
+        from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
 
-        let points = 0;
-        let claimedToday = false;
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            updateDoc
+        }
+        from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
-        function claimDaily() {
 
-            if (claimedToday) {
-                document.getElementById("message").innerText =
-                    "You already claimed today's points.";
-                return;
+        // 🔥 PUT YOUR FIREBASE CONFIG HERE
+
+        const firebaseConfig = {
+    apiKey: "AIzaSyDi2M5_Yhm5DKyRuBZBOg5Yt3aiYUgcoiU",
+    authDomain: "rewarder-c4903.firebaseapp.com",
+    projectId: "rewarder-c4903",
+    storageBucket: "rewarder-c4903.firebasestorage.app",
+    messagingSenderId: "647910037300",
+    appId: "1:647910037300:web:09b4adff6f21a4360c3761",
+    measurementId: "G-66V6SW7QVE"
+};
+
+
+        const app = initializeApp(firebaseConfig);
+
+        const auth = getAuth(app);
+
+        const db = getFirestore(app);
+
+
+        // SIGN UP
+
+        window.signUp = async function() {
+
+            const email =
+                document.getElementById("email").value;
+
+            const password =
+                document.getElementById("password").value;
+
+            try {
+
+                const userCredential =
+                    await createUserWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+                const user =
+                    userCredential.user;
+
+
+                await setDoc(
+                    doc(db, "users", user.uid),
+                    {
+                        email: user.email,
+                        points: 0,
+                        lastClaim: null
+                    }
+                );
+
+
+                document.getElementById("loginMessage").innerText =
+                    "✅ Account created!";
+
+            } catch (error) {
+
+                document.getElementById("loginMessage").innerText =
+                    "❌ " + error.message;
+
             }
 
-            points += 100;
-            claimedToday = true;
+        };
 
-            document.getElementById("points").innerText = points;
 
-            document.getElementById("message").innerText =
+        // LOGIN
+
+        window.login = async function() {
+
+            const email =
+                document.getElementById("email").value;
+
+            const password =
+                document.getElementById("password").value;
+
+            try {
+
+                await signInWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+            } catch (error) {
+
+                document.getElementById("loginMessage").innerText =
+                    "❌ " + error.message;
+
+            }
+
+        };
+
+
+        // LOGOUT
+
+        window.logout = async function() {
+
+            await signOut(auth);
+
+        };
+
+
+        // CHECK LOGIN
+
+        onAuthStateChanged(auth, async (user) => {
+
+            if (user) {
+
+                document
+                    .getElementById("loginScreen")
+                    .classList.add("hidden");
+
+                document
+                    .getElementById("appScreen")
+                    .classList.remove("hidden");
+
+                await loadPoints(user.uid);
+
+            } else {
+
+                document
+                    .getElementById("loginScreen")
+                    .classList.remove("hidden");
+
+                document
+                    .getElementById("appScreen")
+                    .classList.add("hidden");
+
+            }
+
+        });
+
+
+        // LOAD POINTS
+
+        async function loadPoints(uid) {
+
+            const userDoc =
+                await getDoc(
+                    doc(db, "users", uid)
+                );
+
+            if (userDoc.exists()) {
+
+                document
+                    .getElementById("points")
+                    .innerText =
+                    userDoc.data().points || 0;
+
+            }
+
+        }
+
+
+        // DAILY LOGIN
+
+        window.claimDaily = async function() {
+
+            const user = auth.currentUser;
+
+            if (!user) return;
+
+
+            const userRef =
+                doc(db, "users", user.uid);
+
+            const userDoc =
+                await getDoc(userRef);
+
+            const data =
+                userDoc.data();
+
+
+            const today =
+                new Date().toISOString().split("T")[0];
+
+
+            if (data.lastClaim === today) {
+
+                document
+                    .getElementById("appMessage")
+                    .innerText =
+                    "❌ You already claimed today's points.";
+
+                return;
+
+            }
+
+
+            const newPoints =
+                (data.points || 0) + 100;
+
+
+            await updateDoc(
+                userRef,
+                {
+                    points: newPoints,
+                    lastClaim: today
+                }
+            );
+
+
+            document
+                .getElementById("points")
+                .innerText =
+                newPoints;
+
+
+            document
+                .getElementById("appMessage")
+                .innerText =
                 "🎉 You received 100 points!";
-        }
 
-        function redeemUC() {
+        };
 
-            if (points < 100) {
 
-                document.getElementById("message").innerText =
-                    "❌ You need 100 points to redeem 60 UC.";
+        // REDEEM
+
+        window.redeemUC = async function() {
+
+            const user = auth.currentUser;
+
+            if (!user) return;
+
+
+            const userRef =
+                doc(db, "users", user.uid);
+
+            const userDoc =
+                await getDoc(userRef);
+
+            const data =
+                userDoc.data();
+
+
+            if ((data.points || 0) < 100) {
+
+                document
+                    .getElementById("appMessage")
+                    .innerText =
+                    "❌ You need 100 points.";
 
                 return;
+
             }
 
-            points -= 100;
 
-            document.getElementById("points").innerText = points;
+            document
+                .getElementById("appMessage")
+                .innerText =
+                "🛠️ Redemption system will be connected later.";
 
-            document.getElementById("message").innerText =
-                "✅ Redemption request created!";
-        }
+        };
 
     </script>
 
